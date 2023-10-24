@@ -1,0 +1,14 @@
+.main {
+  width: 1280px;
+  min-height: 100vh;
+  margin: 0 auto;
+  padding: 64px 80px;
+  box-sizing: border-box;
+
+  &__users-list {
+    display: grid;
+    grid-template-columns: repeat(3, min-content);
+    gap: 24px;
+  }
+}
+
