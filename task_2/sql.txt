@@ -1,0 +1,64 @@
+CREATE TABLE #sub (id INT, sub_level INT);
+
+DECLARE @table1 table(id int);
+DECLARE @table2 table(id int);
+DECLARE @sub_id INT, @sub_level INT;
+
+INSERT INTO @table1 (id) VALUES (100051);
+
+SET @sub_id = 1;
+SET @sub_level = 0;
+
+WHILE @sub_id > 0
+
+BEGIN
+	SET @sub_level = @sub_level + 1;
+	INSERT INTO #sub (id, sub_level) 
+		SELECT id, sub_level = @sub_level FROM subdivisions
+			WHERE parent_id IN (SELECT id FROM @table1);
+	INSERT INTO @table2 (id) 
+		SELECT id FROM subdivisions
+			WHERE parent_id IN (SELECT id FROM @table1);
+	DELETE FROM @table1;
+	INSERT INTO @table1 (id)
+			SELECT id FROM @table2
+	DELETE FROM @table2;
+END;
+
+
+
+WITH result AS (
+SELECT
+	collaborators.id,
+	collaborators.name,
+	new_subdivisions.name AS sub_name,
+	new_subdivisions.id AS sub_id,
+	new_subdivisions.parent_id AS parent_id,
+	new_subdivisions.sub_level,
+	colls_count = 1
+		FROM collaborators 
+			INNER JOIN (SELECT 
+				subdivisions.id,
+				subdivisions.parent_id,
+				subdivisions.name,
+				new_sub.sub_level
+					FROM subdivisions
+						INNER JOIN (SELECT * FROM #sub
+							WHERE id != 100055 AND id != 100059) AS new_sub 
+						ON subdivisions.id = new_sub.id) AS new_subdivisions
+			ON collaborators.subdivision_id = new_subdivisions.id
+		WHERE collaborators.age < 40 AND LEN(collaborators.name) > 11
+)
+SELECT 
+	result.id,
+	result.name,
+	result.sub_name,
+	result.sub_id,
+	result.sub_level,
+	colls_count = (SELECT COUNT(*) FROM result WHERE parent_id = subdivisions.id) + 1
+		FROM result
+			INNER JOIN subdivisions
+		ON result.sub_id = subdivisions.id;
+
+
+Продолжительность соединения: 00:00:00.0720084
